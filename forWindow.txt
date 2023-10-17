@@ -1,0 +1,6 @@
+step one : 
+    install gtk4 on windows. see https://qiita.com/gpsnmeajp/items/af6db1ccba320aad4a28 for an instruction.
+step two :
+    execute $ gcc $( pkg-config --cflags gtk4 ) -o main.out main.c $( pkg-config --libs gtk4 )
+
+that's it!

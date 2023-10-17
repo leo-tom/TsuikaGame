@@ -187,7 +187,6 @@ void mouse_moved(GtkEventControllerMotion *controller,double new_x,double new_y,
     }
 }
 void mouse_clicked (GtkGestureClick *gesture,int n_press,double x,double y,GtkWidget *widget){
-    fprintf(stderr,"clicked\n");
     grabbedFruit->state = 1;
     grabbedFruit->vy    = 10;
     grabbedFruit->x = mouse_x_coord;
@@ -213,37 +212,86 @@ gboolean physics(GtkWidget *area){
     }
     
     for(int i = 0;i < SIZE;i++){
-        double new_x = active_fruits[i]->x + 10 * active_fruits[i]->vx * time_diff_in_sec;
-        double new_y = active_fruits[i]->y + 10 * active_fruits[i]->vy * time_diff_in_sec;
+        double new_x = active_fruits[i]->x + 20 * active_fruits[i]->vx * time_diff_in_sec;
+        double new_y = active_fruits[i]->y + 20 * active_fruits[i]->vy * time_diff_in_sec;
         double new_vx = active_fruits[i]->vx;
         double new_vy = active_fruits[i]->vy;
         double radius = FruitType2Radius(active_fruits[i]->type);
+        double HanpatsuKeisu = 0.8;
+
+
         if(new_x - radius <= 0.0){
             new_x = 0.0 + radius;
-            new_vx = -0.9*new_vx;
+            new_vx = -HanpatsuKeisu*new_vx;
         }else if(new_x + radius >= AREA_WIDTH){
             new_x = AREA_WIDTH - radius;
-            new_vx = -0.9*new_vx;
+            new_vx = -HanpatsuKeisu*new_vx;
         }
         if(new_y + radius >= AREA_HEIGHT){
             new_y = AREA_HEIGHT - radius;
-            new_vy = 0;
+            new_vy *= 0.05;
         }
-        /*
+
+
+        bool collisionOccured = false;
         for(int j = 0;j < SIZE;j++){
             if(i == j){
                 continue;
             }
-            double dist = distance(active_fruits[i],active_fruits[j]);
-            if(dist < )
+            double xdiff = new_x - active_fruits[j]->x;
+            double ydiff = new_y - active_fruits[j]->y;
+            double dist = sqrt(xdiff*xdiff + ydiff * ydiff);
+            double radiusI = FruitType2Radius(active_fruits[i]->type);
+            double radiusJ = FruitType2Radius(active_fruits[j]->type);
+            if(dist < radiusI + radiusJ ){
+                // Fruits are connected.
+                if(active_fruits[i]->type == active_fruits[j]->type){
+                    //upgrade fruit
+                    new_x = (active_fruits[i]->x + active_fruits[j]->x) / 2.0;
+                    new_y = (active_fruits[i]->y + active_fruits[j]->y) / 2.0;
+                    active_fruits[i]->type++;
+                    new_vx = 0;
+                    new_vy = 10;
+                    freeFruit(active_fruits[j]);
+                    break;
+                }else{
+                    //norm of these numbers should be close to one.
+                    collisionOccured = true;
+                    double vec_x = (new_x - active_fruits[j]->x) / (radiusI + radiusJ);
+                    double vec_y = (new_y - active_fruits[j]->y) / (radiusI + radiusJ);
+                    double massI = FruitType2Mass(active_fruits[i]->type);
+                    double massJ = FruitType2Mass(active_fruits[j]->type);
+                    new_vx += 0.5*(massI/(massI + massJ) ) *vec_x;
+                    new_vy += 0.5*(massI/(massI + massJ) ) *vec_y;
+                    active_fruits[j]->vx -= 0.5*(massJ/(massI + massJ) ) *vec_x;
+                    active_fruits[j]->vy -= 0.5*(massJ/(massI + massJ) ) *vec_y;
+                }
+            }
         }
-        */
-       
-
-        active_fruits[i]->x = new_x;
-        active_fruits[i]->y = new_y;
+        if(collisionOccured){
+            //active_fruits[i]->x =  ( new_x + active_fruits[i]->x ) / 2.0;
+            //active_fruits[i]->y = ( new_y + active_fruits[i]->y ) / 2.0;
+        }else{
+            active_fruits[i]->x = new_x;
+            active_fruits[i]->y = new_y;
+        }
+        
         active_fruits[i]->vx = new_vx;
         active_fruits[i]->vy = new_vy;
+    }
+
+    for(int i = 0;i < SIZE;i++){
+        if(active_fruits[i]->state == 1){
+            active_fruits[i]->vx *= 0.95;
+            if(active_fruits[i]->vy < 0){
+                active_fruits[i]->vy *= 0.60;
+            }else if(active_fruits[i]->vy >= 10){
+                active_fruits[i]->vy = 10;
+            }
+            if(fabs(active_fruits[i]->vy) <= 0.1){
+                active_fruits[i]->vy = 10;
+            }
+        }
     }
     gtk_widget_queue_draw(REF_TO_DRAWING_AREA);
     return true;

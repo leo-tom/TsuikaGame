@@ -11,7 +11,7 @@
 #define AREA_HEIGHT 350
 
 #define MAX_FRUITS 256
-#define TIME_DIFF  33
+#define TIME_DIFF  15
 
 
 void initGraphics(GtkApplication* app, gpointer user_data);
